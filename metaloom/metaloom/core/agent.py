@@ -4,23 +4,24 @@ from metaloom.core.runners import Runner
 from metaloom.core.messages import MessageManager, Message
 from metaloom.core.states import StatusItem, StatusList
 from metaloom.core.space import Space as _space
+import loopgpt
 
-class Agent:
+class Agent(loopgpt.Agent):
     def __init__(self, agent_id: str, space: Optional[_space] = None):
+        super().__init__()
         self.agent_id   = agent_id
+        self.name       = agent_id
         self.space      = space or _space()
         self.state      = StatusList()
         self.state.add(agent_id, "idle")
         self.inbox      = SimpleQueue()
         self.outbox     = SimpleQueue()
         self.messaging  = MessageManager(self,inbox=self.inbox,outbox=self.outbox)
-        self.multirunner= Runner(agent_id, "Agent Runnable")
-        self.runtypes   = self.multirunner.runtypes
+
         self.runners    = {}
 
     def add_runner(self, type : str, *args, **kwargs):
         assert isinstance(type, str), "Invalid runner type."
-        assert type in self.runtypes, "Invalid runner type."
         assert 'name' in kwargs, "Missing runner name."
         self.runners[kwargs['name']] = self.stage(type, *args, **kwargs)
 
@@ -62,3 +63,6 @@ class Agent:
             return output
         except Exception as e:
             self.state.set_error(self.agent_id, str(e))
+
+
+

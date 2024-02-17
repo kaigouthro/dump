@@ -1,6 +1,6 @@
-from .agent import Agent
-from .messages import Message
-from .states import StatusList
+from metaloom.core.agent_advanced import Agent
+from metaloom.core.messages import Message
+from metaloom.core.states import StatusList
 from typing import Dict
 
 class Space:

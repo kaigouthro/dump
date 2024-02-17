@@ -79,6 +79,11 @@ class MessageManager(Runner):
     def get_outbox(self):
         return self.outbound_queue.get()
 
+    def create_new(self, target: str, title: str, text: str):
+        message = Message()
+        message.create_new(target, title, text)
+        return message
+
 
     def __str__(self):
         return f"MessageManager(agent_id='{self.agent.agent_id}')"

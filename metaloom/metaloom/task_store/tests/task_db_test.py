@@ -1,10 +1,11 @@
-from task_db import TaskStorage
+from metaloom.task_store.task_db import TaskStorage
 
 # Create an instance of TaskStorage
 STORAGE = TaskStorage("tasks.db")
 
+
 # Save tasks
-STORAGE.save_task(
+STORAGE.create_task(
     "Task 1",
     description="Description for Task 1",
     completed=True,
@@ -15,7 +16,7 @@ STORAGE.save_task(
     priority=1,
 )
 
-STORAGE.save_task(
+STORAGE.create_task(
     "Task 2",
     description="Description for Task 2",
     completed=False,
@@ -25,7 +26,7 @@ STORAGE.save_task(
     constraints="Constraints for Task 2",
 )
 
-STORAGE.save_task(
+STORAGE.create_task(
     "Task 3",
     description="Description for Task 3",
     completed=True,
@@ -74,7 +75,7 @@ for task in INCOMPLETE_TASKS:
 
 # Update Task 3 description and priority
 STORAGE.update_task(
-    task_id=ALL_TASKS[2]["id"],
+    task_id=ALL_TASKS[1]["id"],
     description="Updated description for Task 3",
     priority=2,
 )
