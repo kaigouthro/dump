@@ -288,11 +288,11 @@ class Runner(Runnable):
         self.runtypes = {
             "base": self.base,
             "function": self.function,
-            # "branch": self.branch,
-            # "parallel": self.parallel,
-            # "passthrough": self.passthrough,
-            # "sequence": self.sequence,
-            # "fallback": self.fallback,
+            "branch": self.branch,
+            "parallel": self.parallel,
+            "passthrough": self.passthrough,
+            "sequence": self.sequence,
+            "fallback": self.fallback,
         }
 
     def invoke(self, *args, **kwargs):
@@ -344,69 +344,69 @@ class Runner(Runnable):
         if invoke:
             return self.runnable.invoke(*args,**kwargs)
 
-    # def branch(self, *args, invoke : bool = False):
-    #     """
-    #     Calls the BranchRunner class.
+    def branch(self, *args, invoke : bool = False):
+        """
+        Calls the BranchRunner class.
 
-    #     Args:
-    #         *args: Variable number of condition-runnable pairs.
+        Args:
+            *args: Variable number of condition-runnable pairs.
 
-    #     Examples:
-    #         branch_Runner = BranchRunner(
-    #             (condition1, runnable1),
-    #             (condition2, runnable2),
-    #             (condition3, runnable3)
-    #         )
-    #         output = branch_Runner.invoke(input_data)
+        Examples:
+            branch_Runner = BranchRunner(
+                (condition1, runnable1),
+                (condition2, runnable2),
+                (condition3, runnable3)
+            )
+            output = branch_Runner.invoke(input_data)
 
-    #     Returns:
-    #         The output of the BranchRunner.
-    #     """
-    #     self.runnable = BranchRunner(*args)
-    #     if invoke:
-    #         return self.runnable.invoke()
+        Returns:
+            The output of the BranchRunner.
+        """
+        self.runnable = BranchRunner(*args)
+        if invoke:
+            return self.runnable.invoke()
 
-    # def parallel(self, runnables, invoke : bool = False, *args, **kwargs):
-    #     """
-    #     Calls the ParallelRunner class.
+    def parallel(self, runnables, invoke : bool = False, *args, **kwargs):
+        """
+        Calls the ParallelRunner class.
 
-    #     Args:
-    #         runnables (dict): A dictionary of runnables to be executed in parallel.
+        Args:
+            runnables (dict): A dictionary of runnables to be executed in parallel.
 
-    #     Returns:
-    #         The output of the ParallelRunner.
-    #     """
-    #     self.runnable = ParallelRunner(runnables)
-    #     if invoke:
-    #         return self.runnable.invoke(*args,**kwargs)
+        Returns:
+            The output of the ParallelRunner.
+        """
+        self.runnable = ParallelRunner(runnables)
+        if invoke:
+            return self.runnable.invoke(*args,**kwargs)
 
-    # def sequence(self, first, middle, last, invoke : bool = False, *args, **kwargs):
-    #     """
-    #     Calls the SequenceRunner class.
+    def sequence(self, first, middle, last, invoke : bool = False, *args, **kwargs):
+        """
+        Calls the SequenceRunner class.
 
-    #     Args:
-    #         first (Runnable): The first runnable to be executed.
-    #         middle (list): A list of runnables to be executed in the middle.
-    #         last (Runnable): The last runnable to be executed.
+        Args:
+            first (Runnable): The first runnable to be executed.
+            middle (list): A list of runnables to be executed in the middle.
+            last (Runnable): The last runnable to be executed.
 
-    #     Returns:
-    #         The output of the SequenceRunner.
-    #     """
-    #     self.runnable = SequenceRunner(first, middle, last)
-    #     if invoke:
-    #         return self.runnable.invoke(*args,**kwargs)
+        Returns:
+            The output of the SequenceRunner.
+        """
+        self.runnable = SequenceRunner(first, middle, last)
+        if invoke:
+            return self.runnable.invoke(*args,**kwargs)
 
-    # def fallback(self, runnable, fallbacks, invoke : bool = False, *args, **kwargs):
-    #     """
-    #     Calls the FallbacksRunner class.
+    def fallback(self, runnable, fallbacks, invoke : bool = False, *args, **kwargs):
+        """
+        Calls the FallbacksRunner class.
 
-    #     Args:
-    #         runnable (Runnable): The primary runnable to be executed.
-    #         fallbacks (list): A list of fallback runnables.
+        Args:
+            runnable (Runnable): The primary runnable to be executed.
+            fallbacks (list): A list of fallback runnables.
 
-    #     Returns:
-    #         The output of the FallbacksRunner.
-    #     """
-    #     self.runnable = FallbacksRunner(runnable, fallbacks)
-    #     if invoke:
-    #         return self.runnable.invoke(*args,**kwargs)
+        Returns:
+            The output of the FallbacksRunner.
+        """
+        self.runnable = FallbacksRunner(runnable, fallbacks)
+        if invoke:
+            return self.runnable.invoke(*args,**kwargs)
