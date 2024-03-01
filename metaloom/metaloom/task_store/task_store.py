@@ -1,65 +1,208 @@
-
-
-# def check_duplicate(existing_names, new_name, threshold=0.3):
-#     """
-#     Checks if a new task name is similar to existing names using difflib.
-
-#     Args:
-#         existing_names: A list of existing task names.
-#         new_name: The new task name to check.
-
-#     Returns:
-#         True if a duplicate is found, False otherwise.
-#     """
-#     for name in existing_names:
-#         # Create a SequenceMatcher object for comparing names
-#         matcher = SequenceMatcher(None, name, new_name)
-#         # Calculate the ratio of matched characters
-#         ratio = matcher.ratio()
-#         # Set a threshold for identifying similar names (adjust as needed)
-#         if ratio > threshold:
-#             return True
-#     return False
-
 import sqlite3
 import uuid
 from difflib import SequenceMatcher
 
-
-from difflib import SequenceMatcher
-from fuzzywuzzy import fuzz
 import nltk
+from fuzzywuzzy import fuzz
 
-def check_duplicate(existing_names, new_name, threshold=0.5):
-  """
-  Checks for duplicate task names using combined approach.
 
-  Args:
-    existing_names: List of existing task names.
-    new_name: The new task name to check.
+def check_duplicate(existing_names, new_name, threshold=0.2):
+    """
+    Checks for duplicate task names using combined approach.
 
-  Returns:
-    True if a duplicate is found, False otherwise.
-  """
-  # Preprocess text
-  processed_names = [nltk.word_tokenize(name.lower()) for name in existing_names]
-  processed_new_name = nltk.word_tokenize(new_name.lower())
+    Args:
+      existing_names: List of existing task names.
+      new_name: The new task name to check.
 
-  # Fuzzy matching
-  potential_duplicates = []
-  for name in processed_names:
-    score = fuzz.ratio(processed_new_name, name)
-    if score > threshold * 50:  # Adjust threshold as needed
-      potential_duplicates.append(name)
+    Returns:
+      True if a duplicate is found, False otherwise.
+    """
+    # Preprocess text
+    processed_names = [nltk.word_tokenize(name.lower()) for name in existing_names]
+    processed_new_name = nltk.word_tokenize(new_name.lower())
 
-  # Refine with difflib
-  for name in potential_duplicates:
-    ratio = SequenceMatcher(None, name, processed_new_name).ratio()
-    if ratio > threshold:  # Adjust threshold as needed
-      return False
+    # Fuzzy matching
+    potential_duplicates = []
+    for name in processed_names:
+        score = fuzz.ratio(processed_new_name, name)
+        if score > threshold * 50:  # Adjust threshold as needed
+            potential_duplicates.append(name)
 
-  return True
+    # Refine with difflib
+    for name in potential_duplicates:
+        ratio = SequenceMatcher(None, name, processed_new_name).ratio()
+        if ratio > threshold:  # Adjust threshold as needed
+            return True
 
+    return False
+
+
+
+class TaskStorage:
+    """
+    A class to store and manage tasks in an SQLite database.
+
+    This class provides functionalities to create, update, delete, and retrieve tasks. It supports the creation of subtasks,
+    marking tasks as completed, and fetching tasks based on various criteria such as parent task ID, completeness, and priority.
+
+    The TaskStorage class uses an SQLite database to efficiently store and retrieve task information. It provides a clean
+    and organized way to manage tasks and their relationships, making it easier to track and prioritize tasks in a project.
+
+    Usage:
+        - Create an instance of TaskStorage by providing the path to the SQLite database.
+        - Use the create_task() method to save a new task with its details such as task name, description, completeness, parent task ID, etc.
+        - Use the update_task() method to update the details of an existing task.
+        - Use the delete_task() method to delete a task from the storage.
+        - Use the get_all_tasks() method to retrieve all tasks from the storage.
+        - Use the get_completed_tasks() method to retrieve only completed tasks from the storage.
+        - Use the get_incomplete_tasks() method to retrieve only incomplete tasks from the storage.
+        - Use the get_tasks_by_parent() method to retrieve tasks with a specific parent task ID.
+        - Use the create_subtask() method to create a subtask under an existing parent task.
+        - Use the mark_task_completed() method to mark a task as completed.
+
+    Examples:
+        # Create an instance of TaskStorage
+        STORAGE = TaskStorage("tasks.db")
+
+        # Save tasks
+        STORAGE.create_task(
+            "Task 1",
+            description="Description for Task 1",
+            completed=True,
+            parent_task_id=None,
+            dependent_task_ids="2,3",
+            expected_result_note="Expected result for Task 1",
+            constraints="Constraints for Task 1",
+            priority=1,
+        )
+
+        STORAGE.create_task(
+            "Task 2",
+            description="Description for Task 2",
+            completed=False,
+            parent_task_id=None,
+            dependent_task_ids="",
+            expected_result_note="Expected result for Task 2",
+            constraints="Constraints for Task 2",
+        )
+
+        # Get all tasks
+        ALL_TASKS = STORAGE.get_all_tasks()
+        for task in ALL_TASKS:
+            print(task)
+
+        # Create a subtask for Task 1
+        STORAGE.create_subtask(
+            parent_task_id=ALL_TASKS[0]["id"],
+            task="Subtask 1",
+            description="Description for Subtask 1",
+            dependent_task_ids="",
+            expected_result_note="Expected result for Subtask 1",
+            constraints="Constraints for Subtask 1",
+        )
+
+        # Get tasks with parent task ID '1'
+        SUBTASKS = STORAGE.get_tasks_by_parent(parent_task_id=ALL_TASKS[0]["id"])
+        for task in SUBTASKS:
+            print(task)
+
+        # Mark Task 2 as completed
+        STORAGE.mark_task_completed(task_id=ALL_TASKS[1]["id"])
+
+        # Get incomplete tasks
+        INCOMPLETE_TASKS = STORAGE.get_incomplete_tasks()
+        for task in INCOMPLETE_TASKS:
+            print(task)
+
+        # Update Task 3 description and priority
+        STORAGE.update_task(
+            task_id=ALL_TASKS[2]["id"],
+            description="Updated description for Task 3",
+            priority=2,
+        )
+
+        # Delete Task 1
+        STORAGE.delete_task(task_id=ALL_TASKS[0]["id"])
+
+        # Get all tasks again
+        ALL_TASKS = STORAGE.get_all_tasks()
+        for task in ALL_TASKS:
+            print(task)
+    """
+
+    def __init__(self, db_path):
+        self.db_path = db_path
+        self.conn = sqlite3.connect(self.db_path)
+        self._create_tables()
+
+    def _create_tables(self):
+        """
+        Creates basic tables if needed.
+
+        Args:
+            self: The parent TaskStorage object.
+
+        Returns:
+            None
+        """
+        with self.conn:
+            self.conn.execute(
+                """CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                task TEXT NOT NULL,
+                description TEXT,
+                completed BOOLEAN NOT NULL,
+                parent_task_id TEXT,
+                dependent_task_ids TEXT,
+                expected_result_note TEXT,
+                constraints TEXT,
+                priority INTEGER,
+                FOREIGN KEY(parent_task_id) REFERENCES tasks(id)
+            )"""
+            )
+
+    @staticmethod
+    def _generate_task_id():
+        """
+        Unique task ID string.
+
+        Returns:
+            str: String representation of the generated UUID.
+        """
+        return str(uuid.uuid4())
+
+    def _check_task_exists(self, task, description):
+        """
+        Checks if a task with the given task and description exists in the database.
+        first get all names and check `check_duplicate` for each.
+        any that are close, then check task descriptions for `check_duplicate`, with its threshold.
+        if true, return true otherwise, return false.
+
+        Args:
+            task (str): The task name.
+            description (str): The task description.
+
+        Returns:
+            bool: True if the task exists, False otherwise.
+        """
+        tasks = self.get_all_tasks()
+        for t in tasks:
+            taskname = t["task"]
+            if check_duplicate(task, taskname) and check_duplicate(description, t["description"]):
+                return True
+        return False
+
+    def create_task(
+        self,
+        task: str,
+        description: str = "",
+        completed: bool = False,
+        parent_task_id=None,
+        dependent_task_ids=None,
+        expected_result_note=None,
+        constraints=None,
+        priority: int = 0,
+    ):
         """
         Saves a new task in the database.
 
@@ -76,7 +219,7 @@ def check_duplicate(existing_names, new_name, threshold=0.5):
         Returns:
             None
         """
-        if self.check_task_exists(task, description):
+        if self._check_task_exists(task, description):
             return
 
         task_id = self._generate_task_id()
@@ -180,6 +323,19 @@ def check_duplicate(existing_names, new_name, threshold=0.5):
         with self.conn:
             self.conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
 
+    def get_all_tasks(self):
+        """
+        Retrieves all tasks from the storage.
+
+        Returns:
+            list: A list of dictionaries representing the tasks.
+        """
+        with self.conn:
+            cursor = self.conn.execute("SELECT * FROM tasks")
+            columns = [column[0] for column in cursor.description]
+            tasks = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        return tasks
+
     def get_completed_tasks(self):
         """
         Retrieves a list of completed tasks from the database.
@@ -203,6 +359,7 @@ def check_duplicate(existing_names, new_name, threshold=0.5):
             "SELECT id, task, description, completed, parent_task_id, dependent_task_ids, expected_result_note, constraints, priority "
             "FROM tasks WHERE completed = FALSE"
         )
+
     def get_task_names(self):
         """
         Retrieves a list of task names from the database.
@@ -320,192 +477,3 @@ def check_duplicate(existing_names, new_name, threshold=0.5):
         """
         self.conn.close()
 
-from langchain_core.runnables import Runnable
-
-
-class CreateTaskRunnable(Runnable):
-    def __init__(
-        self,
-        task_storage,
-        task,
-        description="",
-        completed=False,
-        parent_task_id=None,
-        dependent_task_ids=None,
-        expected_result_note=None,
-        constraints=None,
-        priority=0,
-    ):
-        super().__init__()
-        self.task_storage = task_storage
-        self.task = task
-        self.description = description
-        self.completed = completed
-        self.parent_task_id = parent_task_id
-        self.dependent_task_ids = dependent_task_ids
-        self.expected_result_note = expected_result_note
-        self.constraints = constraints
-        self.priority = priority
-
-    def invoke(self, input_data):
-        self.task_storage.create_task(
-            task=self.task,
-            description=self.description,
-            completed=self.completed,
-            parent_task_id=self.parent_task_id,
-            dependent_task_ids=self.dependent_task_ids,
-            expected_result_note=self.expected_result_note,
-            constraints=self.constraints,
-            priority=self.priority,
-        )
-        return None
-
-class CheckTaskExistsRunnable(Runnable):
-    def __init__(self, task_storage, task, description):
-        super().__init__()
-        self.task_storage = task_storage
-        self.task = task
-        self.description = description
-
-    def invoke(self, input_data):
-        return self.task_storage.check_task_exists(task=self.task, description=self.description)
-
-
-class UpdateTaskRunnable(Runnable):
-    def __init__(
-        self,
-        task_storage,
-        task_id,
-        task=None,
-        description=None,
-        completed=None,
-        parent_task_id=None,
-        dependent_task_ids=None,
-        expected_result_note=None,
-        constraints=None,
-        priority=None,
-    ):
-        super().__init__()
-        self.task_storage = task_storage
-        self.task_id = task_id
-        self.task = task
-        self.description = description
-        self.completed = completed
-        self.parent_task_id = parent_task_id
-        self.dependent_task_ids = dependent_task_ids
-        self.expected_result_note = expected_result_note
-        self.constraints = constraints
-        self.priority = priority
-
-    def invoke(self, input_data):
-        self.task_storage.update_task(
-            task_id=self.task_id,
-            task=self.task,
-            description=self.description,
-            completed=self.completed,
-            parent_task_id=self.parent_task_id,
-            dependent_task_ids=self.dependent_task_ids,
-            expected_result_note=self.expected_result_note,
-            constraints=self.constraints,
-            priority=self.priority,
-        )
-        return None
-
-class DeleteTaskRunnable(Runnable):
-    def __init__(self, task_storage, task_id):
-        super().__init__()
-        self.task_storage = task_storage
-        self.task_id = task_id
-
-    def invoke(self, input_data):
-        self.task_storage.delete_task(task_id=self.task_id)
-        return None
-
-class GetAllTasksRunnable(Runnable):
-    def __init__(self, task_storage):
-        super().__init__()
-        self.task_storage = task_storage
-
-    def invoke(self, input_data):
-        return self.task_storage.get_all_tasks()
-
-class GetCompletedTasksRunnable(Runnable):
-    def __init__(self, task_storage):
-        super().__init__()
-        self.task_storage = task_storage
-
-    def invoke(self, input_data):
-        return self.task_storage.get_completed_tasks()
-
-class GetTaskRunnable(Runnable):
-    def __init__(self, task_storage, task_id):
-        super().__init__()
-        self.task_storage = task_storage
-        self.task_id = task_id
-
-    def invoke(self, input_data):
-        return self.task_storage.get_task(task_id=self.task_id)
-
-class GetIncompleteTasksRunnable(Runnable):
-    def __init__(self, task_storage):
-        super().__init__()
-        self.task_storage = task_storage
-
-    def invoke(self, input_data):
-        return self.task_storage.get_incomplete_tasks()
-
-class GetTasksByParentRunnable(Runnable):
-    def __init__(self, task_storage, parent_task_id):
-        super().__init__()
-        self.task_storage = task_storage
-        self.parent_task_id = parent_task_id
-
-    def invoke(self, input_data):
-        return self.task_storage.get_tasks_by_parent(parent_task_id=self.parent_task_id)
-
-class CreateSubtaskRunnable(Runnable):
-    def __init__(
-        self,
-        task_storage,
-        parent_task_id,
-        task,
-        description="",
-        completed=False,
-        dependent_task_ids=None,
-        expected_result_note=None,
-        constraints=None,
-        priority=0,
-    ):
-        super().__init__()
-        self.task_storage = task_storage
-        self.parent_task_id = parent_task_id
-        self.task = task
-        self.description = description
-        self.completed = completed
-        self.dependent_task_ids = dependent_task_ids
-        self.expected_result_note = expected_result_note
-        self.constraints = constraints
-        self.priority = priority
-
-    def invoke(self, input_data):
-        self.task_storage.create_subtask(
-            parent_task_id=self.parent_task_id,
-            task=self.task,
-            description=self.description,
-            completed=self.completed,
-            dependent_task_ids=self.dependent_task_ids,
-            expected_result_note=self.expected_result_note,
-            constraints=self.constraints,
-            priority=self.priority,
-        )
-        return None
-
-class MarkTaskCompletedRunnable(Runnable):
-    def __init__(self, task_storage, task_id):
-        super().__init__()
-        self.task_storage = task_storage
-        self.task_id = task_id
-
-    def invoke(self, input_data):
-        self.task_storage.mark_task_completed(task_id=self.task_id)
-        return None

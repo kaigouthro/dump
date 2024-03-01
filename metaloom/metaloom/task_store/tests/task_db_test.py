@@ -1,4 +1,4 @@
-from metaloom.task_store.task_db import TaskStorage
+from metaloom.task_store.task_store import TaskStorage
 
 # Create an instance of TaskStorage
 STORAGE = TaskStorage("tasks.db")
@@ -75,7 +75,7 @@ for task in INCOMPLETE_TASKS:
 
 # Update Task 3 description and priority
 STORAGE.update_task(
-    task_id=ALL_TASKS[1]["id"],
+    task_id=ALL_TASKS[2]["id"],
     description="Updated description for Task 3",
     priority=2,
 )
